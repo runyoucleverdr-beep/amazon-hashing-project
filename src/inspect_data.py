@@ -49,10 +49,6 @@ def inspect_dataset(path: str, sample_rows: int = 5) -> None:
     print("=" * 60)
     print(df.head(sample_rows))
 
-    print("\n" + "=" * 60)
-    print("SUMMARY")
-    print("=" * 60)
-
 
 if __name__ == "__main__":
-    inspect_dataset("data/amazon_reviews.csv")
+    inspect_dataset("data/Reviews.csv")
