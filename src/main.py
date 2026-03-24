@@ -22,17 +22,16 @@ def print_top_k(title: str, items: list[tuple], k: int = 10) -> None:
     """
     Print a top-k ranking list.
 
-    Expected behavior:
+    Current implementation:
     - Print a title block
     - Print the first k items in ranking order
-    - Format each item as: index. key -> value
-
-    TODO:
-    - Print the title clearly
-    - Loop over items[:k]
-    - Print each ranking entry
     """
-    pass
+    print("=" * 60)
+    print(title.upper())
+    print("=" * 60)
+
+    for i, (key, value) in enumerate(items[:k], start=1):
+        print(f"{i}. {key} -> {value}")
 
 
 # ============================================================
@@ -43,18 +42,18 @@ def print_score_distribution(score_freq) -> None:
     """
     Print the score frequency distribution.
 
-    Expected behavior:
-    - Print a title block
-    - Get all (score, count) pairs from the score frequency table
-    - Sort them by score
-    - Print them in score order
-
-    TODO:
-    - Call score_freq.items()
-    - Sort items by score
-    - Print each score-count pair clearly
+    Current implementation:
+    - Get all (score, count) pairs
+    - Sort by score
+    - Print them clearly
     """
-    pass
+    print("=" * 60)
+    print("SCORE DISTRIBUTION")
+    print("=" * 60)
+
+    items = sorted(score_freq.items(), key=lambda x: x[0])
+    for score, count in items:
+        print(f"Score {score}: {count}")
 
 
 # ============================================================
@@ -65,27 +64,39 @@ def print_review_samples(title: str, reviews: list[dict], limit: int = 3) -> Non
     """
     Print a small sample of review records.
 
-    Expected behavior:
+    Current implementation:
     - Print a title block
-    - If no reviews are found, print a fallback message
-    - Otherwise print:
-        - total review count
-        - up to 'limit' sample reviews
-    - For each sample review, show selected fields such as:
-        - product_id
-        - user_id
-        - score
-        - summary
-        - text
-
-    TODO:
-    - Handle empty review list
-    - Loop through reviews[:limit]
-    - Extract important fields with dict.get()
-    - Create a shortened preview for long text
-    - Print each review block clearly
+    - Print at most `limit` sample reviews
+    - Show selected fields only
+    - Truncate long text for readability
     """
-    pass
+    print("=" * 60)
+    print(title.upper())
+    print("=" * 60)
+
+    if not reviews:
+        print("No reviews found.")
+        return
+
+    print(f"Total reviews found: {len(reviews)}")
+    print()
+
+    for i, review in enumerate(reviews[:limit], start=1):
+        product_id = review.get("product_id")
+        user_id = review.get("user_id")
+        score = review.get("score")
+        summary = review.get("summary")
+        text = review.get("text")
+
+        short_text = text[:200] + "..." if text and len(text) > 200 else text
+
+        print(f"[Review {i}]")
+        print(f"product_id: {product_id}")
+        print(f"user_id: {user_id}")
+        print(f"score: {score}")
+        print(f"summary: {summary}")
+        print(f"text: {short_text}")
+        print("-" * 40)
 
 
 # ============================================================
@@ -96,35 +107,91 @@ def main() -> None:
     """
     Main driver for the Amazon hashing project demo.
 
-    Recommended workflow:
-    1. Print project/demo title
-    2. Run dataset preprocessing
-    3. Print the preprocessing quality report
-    4. Convert cleaned dataframe into record dictionaries
-    5. Build hash-based indexes and frequency tables
-    6. Print hash structure summaries
-    7. Print top-k products and users
-    8. Print score distribution
-    9. Query one sample product and one sample user
-    10. Print review samples for those queries
-
-    TODO:
-    - Call preprocess_dataset()
-    - Call print_quality_report()
-    - Convert dataframe to records
-    - Build:
-        - product index
-        - user index
-        - score frequency
-        - product review counts
-        - user review counts
-    - Print index summaries
-    - Compute top-k results
-    - Print ranking outputs
-    - Pick one sample product_id and one sample user_id
-    - Query reviews and print samples
+    Current implementation:
+    1. Preprocess dataset
+    2. Print preprocessing report
+    3. Convert dataframe to records
+    4. Build indexes and frequency tables
+    5. Print summaries
+    6. Print top-k results
+    7. Query one real product and one real user
     """
-    pass
+    print("=" * 60)
+    print("AMAZON HASHING PROJECT DEMO")
+    print("=" * 60)
+
+    # --------------------------------------------------------
+    # Step 1: preprocess dataset
+    # --------------------------------------------------------
+    cleaned_df, quality_report = preprocess_dataset()
+    print_quality_report(quality_report)
+
+    # --------------------------------------------------------
+    # Step 2: convert dataframe into record dictionaries
+    # --------------------------------------------------------
+    records = dataframe_to_records(cleaned_df)
+    print(f"\nConverted cleaned dataframe into {len(records)} records.")
+
+    # --------------------------------------------------------
+    # Step 3: build hash-based structures
+    # --------------------------------------------------------
+    print("\nBuilding hash-based data structures...")
+
+    product_index = build_product_index(records)
+    user_index = build_user_index(records)
+    score_freq = build_score_frequency(records)
+    product_counts = build_product_review_counts(records)
+    user_counts = build_user_review_counts(records)
+
+    print("Done.")
+
+    # --------------------------------------------------------
+    # Step 4: print structure summaries
+    # --------------------------------------------------------
+    print()
+    summarize_index(product_index, "product index")
+    summarize_index(user_index, "user index")
+    summarize_index(score_freq, "score frequency")
+
+    # --------------------------------------------------------
+    # Step 5: compute and print top-k frequency results
+    # --------------------------------------------------------
+    top_products = top_k_from_frequency_table(product_counts, k=10)
+    top_users = top_k_from_frequency_table(user_counts, k=10)
+
+    print()
+    print_top_k("Top 10 most reviewed products", top_products, k=10)
+
+    print()
+    print_top_k("Top 10 most active users", top_users, k=10)
+
+    print()
+    print_score_distribution(score_freq)
+
+    # --------------------------------------------------------
+    # Step 6: query one real product and one real user
+    # --------------------------------------------------------
+    if top_products:
+        sample_product_id = top_products[0][0]
+        product_reviews = get_reviews_by_product(product_index, sample_product_id)
+
+        print()
+        print_review_samples(
+            f"Sample reviews for product {sample_product_id}",
+            product_reviews,
+            limit=3
+        )
+
+    if top_users:
+        sample_user_id = top_users[0][0]
+        user_reviews = get_reviews_by_user(user_index, sample_user_id)
+
+        print()
+        print_review_samples(
+            f"Sample reviews by user {sample_user_id}",
+            user_reviews,
+            limit=3
+        )
 
 
 # ============================================================
@@ -132,6 +199,4 @@ def main() -> None:
 # ============================================================
 
 if __name__ == "__main__":
-    # TODO:
-    # - Run the main application demo
-    pass
+    main()
