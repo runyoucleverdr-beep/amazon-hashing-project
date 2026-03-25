@@ -5,214 +5,165 @@ from typing import Any
 from hashtable import HashTable
 
 
-# ============================================================
-# 1. Hash-based index builders
-# ============================================================
-
 def build_product_index(records: list[dict[str, Any]], capacity: int = 200003) -> HashTable:
     """
     Build a hash index:
         product_id -> list of review records
-
-    TODO:
-    - Create a HashTable with the given capacity
-    - Loop through all records
-    - Extract product_id from each record
-    - If product_id is not None, append the full record into the hash table
-    - Return the completed product index
     """
-    pass
+    table = HashTable(capacity=capacity)
+
+    for record in records:
+        product_id = record.get("product_id")
+        if product_id is not None:
+            table.append_to_list(product_id, record)
+
+    return table
 
 
 def build_user_index(records: list[dict[str, Any]], capacity: int = 300007) -> HashTable:
     """
     Build a hash index:
         user_id -> list of review records
-
-    TODO:
-    - Create a HashTable with the given capacity
-    - Loop through all records
-    - Extract user_id from each record
-    - If user_id is not None, append the full record into the hash table
-    - Return the completed user index
     """
-    pass
+    table = HashTable(capacity=capacity)
 
+    for record in records:
+        user_id = record.get("user_id")
+        if user_id is not None:
+            table.append_to_list(user_id, record)
 
-# ============================================================
-# 2. Frequency table builders
-# ============================================================
+    return table
+
 
 def build_score_frequency(records: list[dict[str, Any]], capacity: int = 101) -> HashTable:
     """
     Build a frequency table:
         score -> count
-
-    TODO:
-    - Create a HashTable with the given capacity
-    - Loop through all records
-    - Extract score from each record
-    - If score is not None, increment the corresponding count
-    - Return the completed score frequency table
     """
-    pass
+    table = HashTable(capacity=capacity)
+
+    for record in records:
+        score = record.get("score")
+        if score is not None:
+            table.increment(score)
+
+    return table
 
 
 def build_product_review_counts(records: list[dict[str, Any]], capacity: int = 200003) -> HashTable:
     """
     Build a frequency table:
         product_id -> review count
-
-    TODO:
-    - Create a HashTable with the given capacity
-    - Loop through all records
-    - Extract product_id from each record
-    - If product_id is not None, increment its review count
-    - Return the completed product review count table
     """
-    pass
+    table = HashTable(capacity=capacity)
+
+    for record in records:
+        product_id = record.get("product_id")
+        if product_id is not None:
+            table.increment(product_id)
+
+    return table
 
 
 def build_user_review_counts(records: list[dict[str, Any]], capacity: int = 300007) -> HashTable:
     """
     Build a frequency table:
         user_id -> review count
-
-    TODO:
-    - Create a HashTable with the given capacity
-    - Loop through all records
-    - Extract user_id from each record
-    - If user_id is not None, increment its review count
-    - Return the completed user review count table
     """
-    pass
+    table = HashTable(capacity=capacity)
 
+    for record in records:
+        user_id = record.get("user_id")
+        if user_id is not None:
+            table.increment(user_id)
 
-# ============================================================
-# 3. Sorting and top-k helpers
-# ============================================================
+    return table
+
 
 def hash_items_to_sorted_list(table: HashTable, reverse: bool = True) -> list[tuple[Any, Any]]:
     """
-    Convert all key-value pairs in a hash table into a sorted list.
+    Convert hash table items to a sorted list by value.
 
     Useful for frequency tables such as:
     - product_id -> count
     - user_id -> count
     - score -> count
-
-    TODO:
-    - Call table.items() to get all key-value pairs
-    - Sort them by value
-    - Return the sorted list
     """
-    pass
+    return sorted(table.items(), key=lambda x: x[1], reverse=reverse)
 
 
 def top_k_from_frequency_table(table: HashTable, k: int = 10) -> list[tuple[Any, Any]]:
     """
     Return the top-k (key, count) pairs from a frequency table.
-
-    TODO:
-    - Convert the frequency table to a sorted list
-    - Return only the first k items
     """
-    pass
+    sorted_items = hash_items_to_sorted_list(table, reverse=True)
+    return sorted_items[:k]
 
-
-# ============================================================
-# 4. Query helpers
-# ============================================================
 
 def get_reviews_by_product(product_index: HashTable, product_id: str) -> list[dict[str, Any]]:
     """
     Retrieve all reviews for a given product_id.
-
-    Expected behavior:
-    - Look up the product_id in the product index
-    - If found, return the stored list of review records
-    - If not found, return an empty list
-
-    TODO:
-    - Use HashTable.get()
-    - Handle missing results safely
     """
-    pass
+    reviews = product_index.get(product_id, default=[])
+    return reviews if reviews is not None else []
 
 
 def get_reviews_by_user(user_index: HashTable, user_id: str) -> list[dict[str, Any]]:
     """
     Retrieve all reviews for a given user_id.
-
-    Expected behavior:
-    - Look up the user_id in the user index
-    - If found, return the stored list of review records
-    - If not found, return an empty list
-
-    TODO:
-    - Use HashTable.get()
-    - Handle missing results safely
     """
-    pass
+    reviews = user_index.get(user_id, default=[])
+    return reviews if reviews is not None else []
 
-
-# ============================================================
-# 5. Reporting / summary helper
-# ============================================================
 
 def summarize_index(table: HashTable, name: str) -> None:
     """
     Print a short summary of a hash-based index or frequency table.
-
-    Suggested output:
-    - name
-    - stored keys
-    - capacity
-    - load factor
-    - collision count
-    - max chain length
-
-    TODO:
-    - Print a clean summary block for the given table
-    - Reuse HashTable statistics methods
     """
-    pass
+    print("=" * 60)
+    print(f"{name.upper()} SUMMARY")
+    print("=" * 60)
+    print(f"Stored keys: {len(table)}")
+    print(f"Capacity: {table.capacity}")
+    print(f"Load factor: {table.load_factor():.4f}")
+    print(f"Collision count: {table.collision_count}")
+    print(f"Max chain length: {table.max_chain_length()}")
 
-
-# ============================================================
-# 6. Local demo / sanity check
-# ============================================================
 
 def _demo() -> None:
     """
     Small local demo using toy records.
-
-    Suggested steps:
-    - Create a small list of sample records
-    - Build:
-        - product index
-        - user index
-        - score frequency
-        - product review counts
-        - user review counts
-    - Print summaries
-    - Print top-k results
-    - Query one product and one user
-
-    TODO:
-    - Define several sample review records
-    - Call the builder functions
-    - Print representative results
     """
-    pass
+    sample_records = [
+        {"product_id": "P1", "user_id": "U1", "score": 5, "text": "Great"},
+        {"product_id": "P1", "user_id": "U2", "score": 4, "text": "Good"},
+        {"product_id": "P2", "user_id": "U1", "score": 5, "text": "Nice"},
+        {"product_id": "P3", "user_id": "U3", "score": 2, "text": "Bad"},
+        {"product_id": "P1", "user_id": "U1", "score": 5, "text": "Loved it"},
+    ]
 
+    product_index = build_product_index(sample_records, capacity=11)
+    user_index = build_user_index(sample_records, capacity=11)
+    score_freq = build_score_frequency(sample_records, capacity=11)
+    product_counts = build_product_review_counts(sample_records, capacity=11)
+    user_counts = build_user_review_counts(sample_records, capacity=11)
 
-# ============================================================
-# 7. Script entry
-# ============================================================
+    summarize_index(product_index, "product index")
+    summarize_index(user_index, "user index")
+    summarize_index(score_freq, "score frequency")
+
+    print("\nTop products by review count:")
+    print(top_k_from_frequency_table(product_counts, k=3))
+
+    print("\nTop users by review count:")
+    print(top_k_from_frequency_table(user_counts, k=3))
+
+    print("\nReviews for product P1:")
+    print(get_reviews_by_product(product_index, "P1"))
+
+    print("\nReviews for user U1:")
+    print(get_reviews_by_user(user_index, "U1"))
+
 
 if __name__ == "__main__":
-    # TODO:
-    # - Run the local demo
-    # - Use it to verify whether index building and querying work correctly
-    pass
+    _demo()

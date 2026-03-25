@@ -4,283 +4,204 @@ from dataclasses import dataclass
 from typing import Any
 
 
-# ============================================================
-# 1. Node structure for separate chaining
-# ============================================================
-
 @dataclass
 class HashNode:
-    """
-    A single node used in one bucket chain.
-
-    Attributes:
-    - key: the hash key
-    - value: the value associated with the key
-    - next: pointer to the next node in the same bucket chain
-    """
     key: Any
     value: Any
     next: "HashNode | None" = None
 
 
-# ============================================================
-# 2. Main hash table class
-# ============================================================
-
 class HashTable:
     """
     A simple hash table using separate chaining.
 
-    Planned features:
+    Features:
     - insert(key, value)
     - get(key)
     - contains(key)
     - increment(key, amount)
     - append_to_list(key, item)
-    - keys()
-    - values()
-    - items()
-    - load factor
-    - bucket length statistics
     - collision statistics
     """
 
     def __init__(self, capacity: int = 200003) -> None:
-        """
-        Initialize the hash table.
-
-        TODO:
-        - Store the table capacity
-        - Create the bucket array with empty buckets
-        - Initialize size counter
-        - Initialize collision counter
-        """
-        pass
+        self.capacity = capacity
+        self.buckets: list[HashNode | None] = [None] * capacity
+        self.size = 0
+        self.collision_count = 0
 
     def _hash(self, key: Any) -> int:
         """
-        Compute the bucket index for the given key.
-
-        TODO:
-        - Use Python's built-in hash()
-        - Map the raw hash value into the valid bucket index range
+        Compute a bucket index for the given key.
         """
-        pass
+        return hash(key) % self.capacity
 
     def insert(self, key: Any, value: Any) -> None:
         """
         Insert or update a key-value pair.
-
-        Expected behavior:
-        - If the bucket is empty, insert a new node
-        - If the key already exists in the chain, overwrite its value
-        - If the key does not exist but the bucket is occupied, append a new node
-        - Update size when a new key is added
-        - Update collision count when insertion happens in a non-empty bucket
-
-        TODO:
-        - Find target bucket
-        - Traverse chain if needed
-        - Update existing key or append a new node
+        If the key already exists, overwrite its value.
         """
-        pass
+        index = self._hash(key)
+        head = self.buckets[index]
+
+        if head is None:
+            self.buckets[index] = HashNode(key, value)
+            self.size += 1
+            return
+
+        # Collision occurred because bucket already has at least one node
+        self.collision_count += 1
+
+        current = head
+        while current is not None:
+            if current.key == key:
+                current.value = value
+                return
+            if current.next is None:
+                break
+            current = current.next
+
+        current.next = HashNode(key, value)
+        self.size += 1
 
     def get(self, key: Any, default: Any = None) -> Any:
         """
-        Retrieve the value associated with key.
-
-        Expected behavior:
-        - Search the target bucket chain
-        - Return the stored value if found
-        - Return default if the key does not exist
-
-        TODO:
-        - Compute bucket index
-        - Traverse linked nodes in that bucket
-        - Compare node keys with target key
+        Return the value for key if found; otherwise return default.
         """
-        pass
+        index = self._hash(key)
+        current = self.buckets[index]
+
+        while current is not None:
+            if current.key == key:
+                return current.value
+            current = current.next
+
+        return default
 
     def contains(self, key: Any) -> bool:
         """
-        Check whether the key exists in the hash table.
-
-        Expected behavior:
-        - Return True if the key is found
-        - Return False otherwise
-
-        TODO:
-        - Reuse get() or implement explicit traversal
+        Return True if the key exists in the table.
         """
-        pass
+        return self.get(key, default=None) is not None
 
     def increment(self, key: Any, amount: int = 1) -> None:
         """
         Increment a numeric value stored at key.
-
-        Expected behavior:
-        - If key does not exist, initialize it with amount
-        - If key already exists, increase its value by amount
-
-        Typical use case:
-        - frequency counting, e.g. score -> count
-
-        TODO:
-        - Retrieve current value
-        - Insert new value or updated value
+        If key does not exist, initialize it with amount.
         """
-        pass
+        current_value = self.get(key)
+
+        if current_value is None:
+            self.insert(key, amount)
+        else:
+            self.insert(key, current_value + amount)
 
     def append_to_list(self, key: Any, item: Any) -> None:
         """
         Append an item to a list stored at key.
-
-        Expected behavior:
-        - If key does not exist, initialize the value as a new list [item]
-        - If key exists, append item to the existing list
-
-        Typical use case:
-        - product_id -> list of review records
-        - user_id -> list of review records
-
-        TODO:
-        - Retrieve current value
-        - Create new list or append to existing list
+        If key does not exist, initialize it with a new list.
         """
-        pass
+        current_value = self.get(key)
+
+        if current_value is None:
+            self.insert(key, [item])
+        else:
+            current_value.append(item)
 
     def keys(self) -> list[Any]:
         """
-        Return all keys stored in the hash table.
-
-        Expected behavior:
-        - Traverse every bucket
-        - Traverse every node in each bucket chain
-        - Collect all keys into a list
-
-        TODO:
-        - Iterate over all buckets
-        - Traverse linked lists
+        Return all keys in the hash table.
         """
-        pass
+        all_keys = []
+        for bucket in self.buckets:
+            current = bucket
+            while current is not None:
+                all_keys.append(current.key)
+                current = current.next
+        return all_keys
 
     def values(self) -> list[Any]:
         """
-        Return all values stored in the hash table.
-
-        Expected behavior:
-        - Traverse every bucket and chain
-        - Collect all stored values into a list
-
-        TODO:
-        - Iterate over all buckets
-        - Traverse linked lists
+        Return all values in the hash table.
         """
-        pass
+        all_values = []
+        for bucket in self.buckets:
+            current = bucket
+            while current is not None:
+                all_values.append(current.value)
+                current = current.next
+        return all_values
 
     def items(self) -> list[tuple[Any, Any]]:
         """
-        Return all key-value pairs stored in the hash table.
-
-        Expected behavior:
-        - Traverse every bucket and chain
-        - Collect all (key, value) pairs into a list
-
-        TODO:
-        - Iterate over all buckets
-        - Traverse linked lists
+        Return all key-value pairs in the hash table.
         """
-        pass
+        all_items = []
+        for bucket in self.buckets:
+            current = bucket
+            while current is not None:
+                all_items.append((current.key, current.value))
+                current = current.next
+        return all_items
 
     def load_factor(self) -> float:
         """
-        Compute the current load factor.
-
-        Common definition:
-        - number of stored keys / number of buckets
-
-        TODO:
-        - Return size / capacity
+        Return the current load factor.
         """
-        pass
+        return self.size / self.capacity
 
     def bucket_lengths(self) -> list[int]:
         """
-        Compute the chain length of each bucket.
-
-        Expected behavior:
-        - For every bucket, count how many nodes are stored in its chain
-        - Return a list of chain lengths
-
-        Typical use case:
-        - collision analysis
-        - chain length distribution
-        - max chain length calculation
-
-        TODO:
-        - Iterate through all buckets
-        - Count linked nodes in each chain
+        Return the length of each bucket chain.
+        Useful for collision analysis.
         """
-        pass
+        lengths = []
+        for bucket in self.buckets:
+            length = 0
+            current = bucket
+            while current is not None:
+                length += 1
+                current = current.next
+            lengths.append(length)
+        return lengths
 
     def max_chain_length(self) -> int:
         """
         Return the maximum chain length among all buckets.
-
-        Expected behavior:
-        - Compute all bucket lengths
-        - Return the largest one
-        - If table is empty, return 0
-
-        TODO:
-        - Reuse bucket_lengths()
         """
-        pass
+        return max(self.bucket_lengths(), default=0)
 
     def __len__(self) -> int:
-        """
-        Return the number of stored keys.
+        return self.size
 
-        TODO:
-        - Return self.size
-        """
-        pass
-
-
-# ============================================================
-# 3. Local demo / sanity check
-# ============================================================
 
 def _demo() -> None:
     """
-    A small local sanity check for the hash table.
-
-    Suggested demo steps:
-    - Create a small hash table with a tiny capacity
-    - Insert several keys
-    - Increment some numeric values
-    - Append records into a list value
-    - Print:
-        - retrieved values
-        - contains() results
-        - table size
-        - collision count
-        - load factor
-        - max chain length
-
-    TODO:
-    - Add a few sample operations
-    - Print the outputs clearly
+    Simple sanity check.
     """
-    pass
+    table = HashTable(capacity=11)
 
+    table.insert("A", 10)
+    table.insert("B", 20)
+    table.increment("A")
+    table.increment("C", 5)
+    table.append_to_list("reviews", {"id": 1, "score": 5})
+    table.append_to_list("reviews", {"id": 2, "score": 4})
 
-# ============================================================
-# 4. Script entry
-# ============================================================
+    print("=" * 60)
+    print("HASHTABLE DEMO")
+    print("=" * 60)
+    print("A ->", table.get("A"))
+    print("B ->", table.get("B"))
+    print("C ->", table.get("C"))
+    print("reviews ->", table.get("reviews"))
+    print("contains('A') ->", table.contains("A"))
+    print("contains('Z') ->", table.contains("Z"))
+    print("size ->", len(table))
+    print("collision_count ->", table.collision_count)
+    print("load_factor ->", round(table.load_factor(), 4))
+    print("max_chain_length ->", table.max_chain_length())
+
 
 if __name__ == "__main__":
-    # TODO:
-    # - Run the local demo
-    # - Use it to verify whether the hash table works as expected
-    pass
+    _demo()

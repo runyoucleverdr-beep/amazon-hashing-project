@@ -1,243 +1,224 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
 
-# ============================================================
-# 1. Global configuration
-# ============================================================
-
-# TODO:
-# - Set the raw dataset path.
-# - Keep this path consistent with your project data folder.
 RAW_DATA_PATH = Path("data/Reviews.csv")
 
 
-# TODO:
-# - Map original dataset column names to snake_case names.
 COLUMN_RENAME_MAP = {
-    # "Id": "id",
-    # "ProductId": "product_id",
-    # ...
+    "Id": "id",
+    "ProductId": "product_id",
+    "UserId": "user_id",
+    "ProfileName": "profile_name",
+    "HelpfulnessNumerator": "helpfulness_numerator",
+    "HelpfulnessDenominator": "helpfulness_denominator",
+    "Score": "score",
+    "Time": "time",
+    "Summary": "summary",
+    "Text": "text",
 }
 
 
-# TODO:
-# - List the columns that should be treated as text/string columns.
-# - These columns will need whitespace cleanup and missing-value handling.
 STRING_COLUMNS = [
-    # "product_id",
-    # "user_id",
-    # ...
+    "product_id",
+    "user_id",
+    "profile_name",
+    "summary",
+    "text",
 ]
 
 
-# TODO:
-# - List the columns that should be converted into numeric types.
 NUMERIC_COLUMNS = [
-    # "id",
-    # "score",
-    # ...
+    "id",
+    "helpfulness_numerator",
+    "helpfulness_denominator",
+    "score",
+    "time",
 ]
 
-
-# ============================================================
-# 2. Basic cleaning helpers
-# ============================================================
 
 def normalize_text(value: Any) -> str | None:
     """
-    Normalize one text value.
+    Normalize text fields for cleaner downstream indexing and analysis.
 
-    TODO:
-    - Keep missing values as None
-    - Convert non-string input to string if needed
-    - Strip leading/trailing whitespace
-    - Collapse repeated spaces into one
-    - Convert empty strings to None
+    Rules:
+    - keep missing values as None
+    - convert to string if needed
+    - strip leading/trailing whitespace
+    - collapse repeated whitespace into a single space
+    - convert empty strings to None
     """
-    pass
+    if pd.isna(value):
+        return None
 
+    text = str(value).strip()
+    text = re.sub(r"\s+", " ", text)
 
-# ============================================================
-# 3. Data loading
-# ============================================================
+    if text == "":
+        return None
+
+    return text
+
 
 def load_raw_dataset(path: str | Path = RAW_DATA_PATH) -> pd.DataFrame:
     """
     Load the raw CSV dataset.
-
-    TODO:
-    - Check whether the file exists
-    - Raise a clear error if the file is missing
-    - Read the CSV with pandas
     """
-    pass
+    csv_path = Path(path)
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Dataset file not found: {csv_path}")
 
+    return pd.read_csv(csv_path)
 
-# ============================================================
-# 4. Column preprocessing
-# ============================================================
 
 def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Rename original columns into snake_case columns.
-
-    TODO:
-    - Use COLUMN_RENAME_MAP
-    - Return the renamed DataFrame
+    Rename dataset columns to snake_case for easier processing.
     """
-    pass
+    return df.rename(columns=COLUMN_RENAME_MAP)
 
 
 def clean_string_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Clean selected string columns.
-
-    TODO:
-    - Loop through STRING_COLUMNS
-    - If a column exists, apply normalize_text to it
-    - Return the cleaned DataFrame
+    Clean and normalize selected string columns.
     """
-    pass
+    for col in STRING_COLUMNS:
+        if col in df.columns:
+            df[col] = df[col].apply(normalize_text)
+    return df
 
 
 def convert_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Convert numeric columns into numeric dtype.
-
-    TODO:
-    - Use pd.to_numeric(..., errors="coerce")
-    - Convert key integer-like columns into nullable integer type if needed
-    - Make sure score/helpfulness/time columns have the expected type
+    Force numeric columns into numeric dtype.
+    Invalid values become NaN, then are converted to nullable integer type where possible.
     """
-    pass
+    for col in NUMERIC_COLUMNS:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
 
+    # Keep integer-like columns as nullable integers for cleaner reporting
+    for col in ["id", "helpfulness_numerator", "helpfulness_denominator", "time"]:
+        if col in df.columns:
+            df[col] = df[col].astype("Int64")
 
-# ============================================================
-# 5. Derived feature generation
-# ============================================================
+    if "score" in df.columns:
+        df["score"] = df["score"].astype("Int64")
+
+    return df
+
 
 def add_derived_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Add derived columns that are useful for later hashing analysis.
-
-    Possible examples:
-    - summary_length
-    - text_length
-    - helpfulness_ratio
-
-    TODO:
-    - Add summary length if summary exists
-    - Add text length if text exists
-    - Add helpfulness ratio if numerator/denominator exist
-    - Handle division-by-zero safely
+    Add a few helpful derived fields for later analysis and hashing tasks.
     """
-    pass
+    if "summary" in df.columns:
+        df["summary_length"] = df["summary"].apply(lambda x: len(x) if x is not None else 0)
 
+    if "text" in df.columns:
+        df["text_length"] = df["text"].apply(lambda x: len(x) if x is not None else 0)
 
-# ============================================================
-# 6. Data quality reporting
-# ============================================================
+    if {"helpfulness_numerator", "helpfulness_denominator"}.issubset(df.columns):
+        def helpfulness_ratio(row: pd.Series) -> float | None:
+            num = row["helpfulness_numerator"]
+            den = row["helpfulness_denominator"]
+
+            if pd.isna(num) or pd.isna(den) or den == 0:
+                return None
+            return float(num) / float(den)
+
+        df["helpfulness_ratio"] = df.apply(helpfulness_ratio, axis=1)
+
+    return df
+
 
 def collect_data_quality_report(df: pd.DataFrame) -> dict[str, Any]:
     """
-    Build a compact data-quality report.
-
-    Contents:
-    - row_count
-    - column_count
-    - missing_counts
-    - missing_product_id_count
-    - missing_user_id_count
-    - missing_summary_count
-    - missing_text_count
-    - unique_product_count
-    - unique_user_count
-    - score_distribution
-
-    TODO:
-    - Compute and return a dictionary containing key quality metrics
+    Create a compact data-quality summary for later reporting and debugging.
     """
-    pass
+    report: dict[str, Any] = {
+        "row_count": len(df),
+        "column_count": len(df.columns),
+        "missing_counts": df.isnull().sum().to_dict(),
+        "missing_product_id_count": int(df["product_id"].isnull().sum()) if "product_id" in df.columns else None,
+        "missing_user_id_count": int(df["user_id"].isnull().sum()) if "user_id" in df.columns else None,
+        "missing_summary_count": int(df["summary"].isnull().sum()) if "summary" in df.columns else None,
+        "missing_text_count": int(df["text"].isnull().sum()) if "text" in df.columns else None,
+        "unique_product_count": int(df["product_id"].nunique(dropna=True)) if "product_id" in df.columns else None,
+        "unique_user_count": int(df["user_id"].nunique(dropna=True)) if "user_id" in df.columns else None,
+        "score_distribution": (
+            df["score"].value_counts(dropna=False).sort_index().to_dict()
+            if "score" in df.columns else {}
+        ),
+    }
+    return report
 
-
-# ============================================================
-# 7. Full preprocessing pipeline
-# ============================================================
 
 def preprocess_dataset(path: str | Path = RAW_DATA_PATH) -> tuple[pd.DataFrame, dict[str, Any]]:
     """
-    Full preprocessing pipeline.
-
-    Steps:
-    1. Load raw dataset
-    2. Rename columns
-    3. Clean string columns
-    4. Convert numeric columns
-    5. Add derived columns
-    6. Collect quality report
-    7. Return cleaned DataFrame and report
-
-    TODO:
-    - Call the helper functions in the correct order
-    - Return (cleaned_df, report)
+    Full preprocessing pipeline:
+    1. load raw dataset
+    2. rename columns
+    3. clean strings
+    4. convert numeric columns
+    5. add derived columns
+    6. return cleaned DataFrame + quality report
     """
-    pass
+    df = load_raw_dataset(path)
+    df = rename_columns(df)
+    df = clean_string_columns(df)
+    df = convert_numeric_columns(df)
+    df = add_derived_columns(df)
 
+    report = collect_data_quality_report(df)
+    return df, report
 
-# ============================================================
-# 8. Conversion for downstream hashing
-# ============================================================
 
 def dataframe_to_records(df: pd.DataFrame) -> list[dict[str, Any]]:
     """
-    Convert cleaned DataFrame into a list of record dictionaries.
-
-    TODO:
-    - Use DataFrame.to_dict(orient="records")
-    - Return the list of records
+    Convert cleaned DataFrame to a list of dictionaries for hash-table-based processing.
     """
-    pass
+    return df.to_dict(orient="records")
 
-
-# ============================================================
-# 9. Printing / debugging helpers
-# ============================================================
 
 def print_quality_report(report: dict[str, Any]) -> None:
     """
-    Print the most important quality indicators in a readable format.
-
-    Suggested output:
-    - Rows
-    - Columns
-    - Unique products
-    - Unique users
-    - Missing product_id
-    - Missing user_id
-    - Missing summary
-    - Missing text
-    - Score distribution
-    - Top missing-value columns
-
-    TODO:
-    - Format the report clearly for terminal output
+    Print the most important quality indicators.
     """
-    pass
+    print("=" * 60)
+    print("PREPROCESSING REPORT")
+    print("=" * 60)
+    print(f"Rows: {report['row_count']}")
+    print(f"Columns: {report['column_count']}")
+    print(f"Unique products: {report['unique_product_count']}")
+    print(f"Unique users: {report['unique_user_count']}")
+    print(f"Missing product_id: {report['missing_product_id_count']}")
+    print(f"Missing user_id: {report['missing_user_id_count']}")
+    print(f"Missing summary: {report['missing_summary_count']}")
+    print(f"Missing text: {report['missing_text_count']}")
 
+    print("\nScore distribution:")
+    for score, count in report["score_distribution"].items():
+        print(f"  {score}: {count}")
 
-# ============================================================
-# 10. Local test entry
-# ============================================================
+    print("\nTop missing-value columns:")
+    missing_counts = report["missing_counts"]
+    top_missing = sorted(missing_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+    for col, count in top_missing:
+        print(f"  {col}: {count}")
+
 
 if __name__ == "__main__":
-    # TODO:
-    # - Run the full preprocessing pipeline
-    # - Print the quality report
-    # - Print a few sample cleaned rows
-    # - Convert to records and print total record count
-    pass
+    cleaned_df, quality_report = preprocess_dataset()
+    print_quality_report(quality_report)
+
+    print("\nSample cleaned rows:")
+    print(cleaned_df.head(3))
+
+    records = dataframe_to_records(cleaned_df)
+    print(f"\nConverted to {len(records)} records.")
