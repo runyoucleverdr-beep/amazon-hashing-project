@@ -21,10 +21,6 @@ from indexer import (
 def print_top_k(title: str, items: list[tuple], k: int = 10) -> None:
     """
     Print a top-k ranking list.
-
-    Current implementation:
-    - Print a title block
-    - Print the first k items in ranking order
     """
     print("=" * 60)
     print(title.upper())
@@ -41,11 +37,6 @@ def print_top_k(title: str, items: list[tuple], k: int = 10) -> None:
 def print_score_distribution(score_freq) -> None:
     """
     Print the score frequency distribution.
-
-    Current implementation:
-    - Get all (score, count) pairs
-    - Sort by score
-    - Print them clearly
     """
     print("=" * 60)
     print("SCORE DISTRIBUTION")
@@ -63,12 +54,6 @@ def print_score_distribution(score_freq) -> None:
 def print_review_samples(title: str, reviews: list[dict], limit: int = 3) -> None:
     """
     Print a small sample of review records.
-
-    Current implementation:
-    - Print a title block
-    - Print at most `limit` sample reviews
-    - Show selected fields only
-    - Truncate long text for readability
     """
     print("=" * 60)
     print(title.upper())
@@ -106,35 +91,20 @@ def print_review_samples(title: str, reviews: list[dict], limit: int = 3) -> Non
 def main() -> None:
     """
     Main driver for the Amazon hashing project demo.
-
-    Current implementation:
-    1. Preprocess dataset
-    2. Print preprocessing report
-    3. Convert dataframe to records
-    4. Build indexes and frequency tables
-    5. Print summaries
-    6. Print top-k results
-    7. Query one real product and one real user
     """
     print("=" * 60)
     print("AMAZON HASHING PROJECT DEMO")
     print("=" * 60)
 
-    # --------------------------------------------------------
-    # Step 1: preprocess dataset
-    # --------------------------------------------------------
+    # 1. Preprocess dataset
     cleaned_df, quality_report = preprocess_dataset()
     print_quality_report(quality_report)
 
-    # --------------------------------------------------------
-    # Step 2: convert dataframe into record dictionaries
-    # --------------------------------------------------------
+    # 2. Convert to records
     records = dataframe_to_records(cleaned_df)
     print(f"\nConverted cleaned dataframe into {len(records)} records.")
 
-    # --------------------------------------------------------
-    # Step 3: build hash-based structures
-    # --------------------------------------------------------
+    # 3. Build hash-based indexes and frequency tables
     print("\nBuilding hash-based data structures...")
 
     product_index = build_product_index(records)
@@ -145,17 +115,13 @@ def main() -> None:
 
     print("Done.")
 
-    # --------------------------------------------------------
-    # Step 4: print structure summaries
-    # --------------------------------------------------------
+    # 4. Print index summaries
     print()
     summarize_index(product_index, "product index")
     summarize_index(user_index, "user index")
     summarize_index(score_freq, "score frequency")
 
-    # --------------------------------------------------------
-    # Step 5: compute and print top-k frequency results
-    # --------------------------------------------------------
+    # 5. Print top-k frequency results
     top_products = top_k_from_frequency_table(product_counts, k=10)
     top_users = top_k_from_frequency_table(user_counts, k=10)
 
@@ -168,9 +134,7 @@ def main() -> None:
     print()
     print_score_distribution(score_freq)
 
-    # --------------------------------------------------------
-    # Step 6: query one real product and one real user
-    # --------------------------------------------------------
+    # 6. Query one real product and one real user
     if top_products:
         sample_product_id = top_products[0][0]
         product_reviews = get_reviews_by_product(product_index, sample_product_id)

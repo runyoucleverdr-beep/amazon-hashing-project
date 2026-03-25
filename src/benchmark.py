@@ -20,16 +20,9 @@ from indexer import (
 
 def sample_records(records: list[dict[str, Any]], n: int) -> list[dict[str, Any]]:
     """
-    Return a subset of records for benchmarking.
-
-    Suggested behavior:
-    - Use the first n records for reproducibility
-    - Return a smaller dataset for each benchmark scale
-
-    TODO:
-    - Slice the records list and return records[:n]
+    Return the first n records for reproducible benchmarking.
     """
-    pass
+    return records[:n]
 
 
 # ============================================================
@@ -40,110 +33,100 @@ def benchmark_build_product_index(records: list[dict[str, Any]]) -> dict[str, An
     """
     Benchmark building:
         product_id -> list of review records
-
-    Suggested measurements:
-    - elapsed build time
-    - number of records processed
-    - number of stored keys
-    - load factor
-    - collision count
-    - max chain length
-
-    TODO:
-    - Start timer
-    - Build product index
-    - Stop timer
-    - Return results as a dictionary
     """
-    pass
+    start = time.perf_counter()
+    table = build_product_index(records)
+    elapsed = time.perf_counter() - start
+
+    return {
+        "task": "build_product_index",
+        "num_records": len(records),
+        "stored_keys": len(table),
+        "time_seconds": elapsed,
+        "load_factor": table.load_factor(),
+        "collision_count": table.collision_count,
+        "max_chain_length": table.max_chain_length(),
+    }
 
 
 def benchmark_build_user_index(records: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Benchmark building:
         user_id -> list of review records
-
-    Suggested measurements:
-    - elapsed build time
-    - number of records processed
-    - number of stored keys
-    - load factor
-    - collision count
-    - max chain length
-
-    TODO:
-    - Start timer
-    - Build user index
-    - Stop timer
-    - Return results as a dictionary
     """
-    pass
+    start = time.perf_counter()
+    table = build_user_index(records)
+    elapsed = time.perf_counter() - start
+
+    return {
+        "task": "build_user_index",
+        "num_records": len(records),
+        "stored_keys": len(table),
+        "time_seconds": elapsed,
+        "load_factor": table.load_factor(),
+        "collision_count": table.collision_count,
+        "max_chain_length": table.max_chain_length(),
+    }
 
 
 def benchmark_build_product_counts(records: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Benchmark building:
         product_id -> review count
-
-    Suggested measurements:
-    - elapsed build time
-    - number of records processed
-    - number of stored keys
-    - load factor
-    - collision count
-    - max chain length
-
-    TODO:
-    - Start timer
-    - Build product review count table
-    - Stop timer
-    - Return results as a dictionary
     """
-    pass
+    start = time.perf_counter()
+    table = build_product_review_counts(records)
+    elapsed = time.perf_counter() - start
+
+    return {
+        "task": "build_product_review_counts",
+        "num_records": len(records),
+        "stored_keys": len(table),
+        "time_seconds": elapsed,
+        "load_factor": table.load_factor(),
+        "collision_count": table.collision_count,
+        "max_chain_length": table.max_chain_length(),
+    }
 
 
 def benchmark_build_user_counts(records: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Benchmark building:
         user_id -> review count
-
-    Suggested measurements:
-    - elapsed build time
-    - number of records processed
-    - number of stored keys
-    - load factor
-    - collision count
-    - max chain length
-
-    TODO:
-    - Start timer
-    - Build user review count table
-    - Stop timer
-    - Return results as a dictionary
     """
-    pass
+    start = time.perf_counter()
+    table = build_user_review_counts(records)
+    elapsed = time.perf_counter() - start
+
+    return {
+        "task": "build_user_review_counts",
+        "num_records": len(records),
+        "stored_keys": len(table),
+        "time_seconds": elapsed,
+        "load_factor": table.load_factor(),
+        "collision_count": table.collision_count,
+        "max_chain_length": table.max_chain_length(),
+    }
 
 
 def benchmark_build_score_frequency(records: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Benchmark building:
         score -> count
-
-    Suggested measurements:
-    - elapsed build time
-    - number of records processed
-    - number of stored keys
-    - load factor
-    - collision count
-    - max chain length
-
-    TODO:
-    - Start timer
-    - Build score frequency table
-    - Stop timer
-    - Return results as a dictionary
     """
-    pass
+    start = time.perf_counter()
+    table = build_score_frequency(records)
+    elapsed = time.perf_counter() - start
+
+    return {
+        "task": "build_score_frequency",
+        "num_records": len(records),
+        "stored_keys": len(table),
+        "time_seconds": elapsed,
+        "load_factor": table.load_factor(),
+        "collision_count": table.collision_count,
+        "max_chain_length": table.max_chain_length(),
+    }
 
 
 # ============================================================
@@ -156,29 +139,30 @@ def benchmark_lookup_product_index(
 ) -> dict[str, Any]:
     """
     Benchmark lookup performance on the product index.
-
-    Suggested behavior:
-    - Build the product index first
-    - Extract a set of valid product_id keys
-    - Randomly sample query keys
-    - Measure total lookup time
-    - Report average time per query
-
-    Suggested output fields:
-    - num_records
-    - num_queries
-    - time_seconds
-    - avg_time_per_query_ms
-    - total_found_reviews
-
-    TODO:
-    - Build product index
-    - Generate query keys
-    - Time repeated lookups
-    - Aggregate lookup results
-    - Return benchmark summary dictionary
     """
-    pass
+    table = build_product_index(records)
+
+    product_ids = list({r["product_id"] for r in records if r.get("product_id") is not None})
+    if not product_ids:
+        raise ValueError("No product_id values available for lookup benchmark.")
+
+    query_keys = random.sample(product_ids, min(num_queries, len(product_ids)))
+
+    start = time.perf_counter()
+    total_found = 0
+    for key in query_keys:
+        reviews = table.get(key, [])
+        total_found += len(reviews)
+    elapsed = time.perf_counter() - start
+
+    return {
+        "task": "lookup_product_index",
+        "num_records": len(records),
+        "num_queries": len(query_keys),
+        "time_seconds": elapsed,
+        "avg_time_per_query_ms": (elapsed / len(query_keys)) * 1000,
+        "total_found_reviews": total_found,
+    }
 
 
 def benchmark_lookup_user_index(
@@ -187,29 +171,30 @@ def benchmark_lookup_user_index(
 ) -> dict[str, Any]:
     """
     Benchmark lookup performance on the user index.
-
-    Suggested behavior:
-    - Build the user index first
-    - Extract a set of valid user_id keys
-    - Randomly sample query keys
-    - Measure total lookup time
-    - Report average time per query
-
-    Suggested output fields:
-    - num_records
-    - num_queries
-    - time_seconds
-    - avg_time_per_query_ms
-    - total_found_reviews
-
-    TODO:
-    - Build user index
-    - Generate query keys
-    - Time repeated lookups
-    - Aggregate lookup results
-    - Return benchmark summary dictionary
     """
-    pass
+    table = build_user_index(records)
+
+    user_ids = list({r["user_id"] for r in records if r.get("user_id") is not None})
+    if not user_ids:
+        raise ValueError("No user_id values available for lookup benchmark.")
+
+    query_keys = random.sample(user_ids, min(num_queries, len(user_ids)))
+
+    start = time.perf_counter()
+    total_found = 0
+    for key in query_keys:
+        reviews = table.get(key, [])
+        total_found += len(reviews)
+    elapsed = time.perf_counter() - start
+
+    return {
+        "task": "lookup_user_index",
+        "num_records": len(records),
+        "num_queries": len(query_keys),
+        "time_seconds": elapsed,
+        "avg_time_per_query_ms": (elapsed / len(query_keys)) * 1000,
+        "total_found_reviews": total_found,
+    }
 
 
 # ============================================================
@@ -219,15 +204,13 @@ def benchmark_lookup_user_index(
 def print_result(result: dict[str, Any]) -> None:
     """
     Print one benchmark result block.
-
-    Suggested behavior:
-    - Print the task name as title
-    - Print the remaining key-value pairs line by line
-
-    TODO:
-    - Format benchmark output clearly for terminal display
     """
-    pass
+    print("=" * 60)
+    print(result["task"].upper())
+    print("=" * 60)
+    for key, value in result.items():
+        if key != "task":
+            print(f"{key}: {value}")
 
 
 # ============================================================
@@ -237,32 +220,36 @@ def print_result(result: dict[str, Any]) -> None:
 def main() -> None:
     """
     Main driver for benchmarking the hash-based Amazon review application.
-
-    Recommended workflow:
-    1. Print benchmark title
-    2. Preprocess dataset
-    3. Convert dataframe to record dictionaries
-    4. Define benchmark sizes, e.g.:
-        - 1,000
-        - 10,000
-        - 50,000
-        - 100,000
-        - full dataset size
-    5. For each size:
-        - sample records
-        - run build benchmarks
-        - run lookup benchmarks
-        - print all results
-
-    TODO:
-    - Call preprocess_dataset()
-    - Convert to records
-    - Define data sizes
-    - Loop over benchmark sizes
-    - Run benchmark functions
-    - Print outputs for each task
     """
-    pass
+    print("=" * 60)
+    print("BENCHMARKING HASH-BASED AMAZON REVIEW APPLICATION")
+    print("=" * 60)
+
+    cleaned_df, _ = preprocess_dataset()
+    records = dataframe_to_records(cleaned_df)
+
+    sizes = [1000, 10000, 50000, 100000, len(records)]
+
+    for size in sizes:
+        print("\n" + "#" * 60)
+        print(f"DATA SIZE: {size}")
+        print("#" * 60)
+
+        subset = sample_records(records, size)
+
+        results = [
+            benchmark_build_product_index(subset),
+            benchmark_build_user_index(subset),
+            benchmark_build_product_counts(subset),
+            benchmark_build_user_counts(subset),
+            benchmark_build_score_frequency(subset),
+            benchmark_lookup_product_index(subset, num_queries=1000),
+            benchmark_lookup_user_index(subset, num_queries=1000),
+        ]
+
+        for result in results:
+            print()
+            print_result(result)
 
 
 # ============================================================
@@ -270,6 +257,4 @@ def main() -> None:
 # ============================================================
 
 if __name__ == "__main__":
-    # TODO:
-    # - Run the benchmark workflow
-    pass
+    main()
