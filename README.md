@@ -50,7 +50,7 @@ amazon-hashing-project/
 ```
 
 ## AI statement
-AI was used to search for solutions to github version conflicts on March 23 commits.
+AI was used to search for solutions to github version conflicts on March 23, 25 commits.
 
 ## How to run
 python src/main.py
