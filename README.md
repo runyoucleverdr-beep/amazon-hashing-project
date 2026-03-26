@@ -47,3 +47,6 @@ amazon-hashing-project/
 ├── requirements.txt
 ├── .gitignore
 └── proposal.md
+
+## AI statement:
+AI was used to search for solutions to github version conflicts on March 23 commits.
